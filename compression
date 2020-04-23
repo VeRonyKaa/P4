@@ -1,0 +1,70 @@
+import numpy as np
+import scipy.io.wavfile as wave
+
+def gainSmoothing(gain, attackTime, releaseTime):
+    # note that the attack and release times are in samples!
+    nData = np.size(gain)
+    smoothedGain = np.zeros(nData)
+    for n in np.arange(nData):
+        if n == 0:
+            smoothedGain[n] = gain[n]
+        else:
+            if gain[n] < smoothedGain[n-1]:
+                forgettingFactor = np.exp(-2.2/releaseTime)
+            else:
+                forgettingFactor = np.exp(-2.2/attackTime)
+            smoothedGain[n] = (1-forgettingFactor)*gain[n] + \
+                forgettingFactor*smoothedGain[n-1]
+    return smoothedGain
+
+def compressorGain(inputLevel, thresholdDb, compressionFactor):
+    nData = np.size(inputLevel)
+    gain = np.zeros(nData)
+    threshold = 10**(thresholdDb/20)
+    for n in np.arange(nData):
+        if inputLevel[n] <= threshold:
+            gain[n] = 1
+        else:
+            gain[n] = (inputLevel[n]/threshold)**(1/compressionFactor-1)
+    return gain
+
+def dynamicRangeCompression(inputSignal, levelForgettingFactor, thresholdDb, compressionFactor, \
+                           attackTime, releaseTime):
+    #normalise signal so maximum value is 1
+    maxVal = np.max(np.abs(inputSignal))
+    # level estimation
+    signalLevel = expWindowLevelMeasurement(inputSignal/maxVal, levelForgettingFactor)
+    # gain computation
+    gain = compressorGain(signalLevel, thresholdDb, compressionFactor)
+    # gain smoothing
+    smoothedGain = gainSmoothing(gain, attackTime, releaseTime)
+    return maxVal*smoothedGain*inputSignal
+
+def expWindowLevelMeasurement(inputSignal, forgettingFactor):
+    nData = np.size(inputSignal)
+    filteredSignalPower = np.zeros(nData)
+    inputSignalPower = inputSignal**2
+    for n in np.arange(nData):
+        if n == 0:
+            print( (1-forgettingFactor)*inputSignalPower[7])
+            filteredSignalPower[n] = (1-forgettingFactor)*inputSignalPower[0]
+        else:
+            filteredSignalPower[n] = (1-forgettingFactor)*inputSignalPower[n]+ \
+                forgettingFactor*filteredSignalPower[n-1]
+    return np.sqrt(filteredSignalPower)
+
+
+
+samplingFreq, guitarSignal = wave.read('/Users/veronikanemcova/PycharmProjects/PitchShift/myvoice.wav')
+#guitarSignal = guitarSignal/2**15 # normalise SO THIS DEOSNT WORK WHY NANI THE FUCK?
+guitarSignal = guitarSignal[:,0]/2**15 # normalise
+
+
+levelForgettingFactor = 0.99
+thresholdDb = -25 # dB
+compressionFactor = 10
+attackTime = 5e-4*samplingFreq # samples
+releaseTime = 0.05*samplingFreq # samples
+drcGuitarSignal = dynamicRangeCompression(guitarSignal, levelForgettingFactor, thresholdDb, compressionFactor, \
+    attackTime, releaseTime)
+wave.write(filename='compre.wav', rate=samplingFreq, data=drcGuitarSignal)
