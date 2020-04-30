@@ -1,0 +1,34 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.io.wavfile as wave
+import scipy.signal as sig
+
+
+
+def limitDynamicRange(spectrogram, maxRangeDb):
+    minVal = np.max(spectrogram) * 10 ** (-maxRangeDb / 10)
+    # set all values below minVal to minVal
+    spectrogram[spectrogram < minVal] = minVal
+    return spectrogram
+
+
+# load a trumpet signal
+samplingFreq, Signal = wave.read('/Users/veronikanemcova/PycharmProjects/PitchShift/myvoice.wav')
+Signal = Signal[:,0]/2**15 # normalise
+
+
+
+
+# compute the spectrogram of the signal (see more details in lecture 7)
+frameLength = np.int(np.round(0.05*samplingFreq)) # samples
+hopSize = 0.75*frameLength # samples
+nDft = 2**13
+maxDynamicRange = 80 # dB
+freqVector, timeVector, spectrogram = sig.spectrogram(Signal, \
+    fs=samplingFreq, window=np.hanning(frameLength), nperseg=frameLength, noverlap=hopSize, nfft=nDft)
+
+plt.figure(figsize=(14,6))
+plt.pcolormesh(timeVector, freqVector, 10*np.log10(limitDynamicRange(spectrogram, maxDynamicRange)), cmap='jet')
+plt.xlabel('Time [sec]'), plt.ylabel('Frequency [Hz]')
+plt.colorbar(), plt.xlim((0,timeVector[-1])), plt.ylim((0,5000));
+plt.show()
