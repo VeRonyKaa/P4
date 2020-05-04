@@ -1,5 +1,3 @@
-import numpy as np
-import scipy.signal as sig
 import scipy.io.wavfile as wave
 
 def paramEqFilterCoefficients(digCenterFreq, digBandwidth, gain, level=1):
@@ -22,9 +20,9 @@ def paramEqFilterCoefficients(digCenterFreq, digBandwidth, gain, level=1):
 
 samplingFreq, guitarSignal = wave.read('/Users/veronikanemcova/PycharmProjects/PitchShift/sentence_5.wav')
 inputsignal = guitarSignal[:,0]/2**15 # normalise
-centerFreq = samplingFreq/2 # Hz - for high shelving filter
+centerFreq = 0 # Hz - for high shelving filter
 cutoffFreq = 8000 # Hz
-gain = 1.5
+gain = 1
 nDtft = 2048
 feedforwardParams, feedbackParams = paramEqFilterCoefficients(centerFreq*2*np.pi/samplingFreq, \
     np.pi-cutoffFreq*2*np.pi/samplingFreq, gain)
