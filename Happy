@@ -79,8 +79,8 @@ inputsignal = guitarSignal[:,0]/2**15 # normalise
 levelForgettingFactor = 0.99
 thresholdDb = -26 # dB
 compressionFactor = 10
-attackTime = 5e-4*samplingFreq # samples
-releaseTime = 0.05*samplingFreq # samples
+attackTime = 10 # samples
+releaseTime = 10 # samples
 compSignal = dynamicRangeCompression(inputsignal, levelForgettingFactor, thresholdDb, compressionFactor, \
     attackTime, releaseTime)
 
