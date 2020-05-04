@@ -77,7 +77,7 @@ inputsignal = guitarSignal[:,0]/2**15 # normalise
 
 # compression
 levelForgettingFactor = 0.99
-thresholdDb = -25 # dB
+thresholdDb = -26 # dB
 compressionFactor = 10
 attackTime = 5e-4*samplingFreq # samples
 releaseTime = 0.05*samplingFreq # samples
