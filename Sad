@@ -1,3 +1,5 @@
+import numpy as np
+import scipy.signal as sig
 import scipy.io.wavfile as wave
 
 def paramEqFilterCoefficients(digCenterFreq, digBandwidth, gain, level=1):
