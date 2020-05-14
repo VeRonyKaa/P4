@@ -22,7 +22,7 @@ def paramEqFilterCoefficients(digCenterFreq, digBandwidth, gain, level=1):
 
 samplingFreq, guitarSignal = wave.read('/Users/veronikanemcova/PycharmProjects/PitchShift/sentence_5.wav')
 inputsignal = guitarSignal[:,0]/2**15 # normalise
-centerFreq = 0 # Hz - for high shelving filter
+centerFreq = 0 # Hz - for low shelving filter
 cutoffFreq = 8000 # Hz
 gain = 1
 nDtft = 2048
