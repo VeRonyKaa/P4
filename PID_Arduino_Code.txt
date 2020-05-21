@@ -1,0 +1,166 @@
+///////////////////////////////////////////////////////////////////////////////////////////
+/////////////////// This program is an attempt to test and achieve ////////////////////////
+//// pattern recognition / template matching when using input from a single sensor ////////
+///////////////////////////////////////////////////////////////////////////////////////////
+#include <LiquidCrystal.h>
+
+// TIME
+int newTime;
+int oldTime;
+int deltaTime;
+
+// PINS
+int ledPin = 6;
+int rPin = 7;
+int gPin = 8;
+int bPin = 13;
+int sensorPin = 0;  // Analog
+int angryPin = 9;
+int scaredPin = 10;
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+
+int ledTimer;
+int ledLifetime = 300;
+
+// TEMPLATE DATA
+int pattern1[] = {900, 500, 200, 500, 900}; // Sine-like movement
+int pattern2[] = {200, 400, 600, 800};      // Linear movement
+
+// ALGORITHM SETTINGS
+int patternStepDelay = 1300; // The maximum time between performed peaks in the pattern
+int patternDeviance = 100;   // The activation range for each step of the pattern
+
+int currentPatternStep = 0; // Keeps track of the step that is being evaluated
+int patternTimer = 0;       // Measures time between steps
+bool patternFinished = false;
+
+void setup() {
+
+  // LED VISUALISATION
+  pinMode(rPin, OUTPUT); // R
+  pinMode(gPin, OUTPUT); // G
+  pinMode(bPin, OUTPUT); // B
+  digitalWrite(5, LOW);
+  digitalWrite(6, LOW);
+  digitalWrite(7, LOW);
+
+  pinMode(ledPin, OUTPUT);
+
+  Serial.begin(9600);
+  lcd.begin(16, 2);
+
+  lcd.print(" SIGN-TO-SPEECH ");
+  delay(2000);
+  lcd.clear();
+}
+
+void loop() {
+
+  oldTime = newTime;
+  newTime = millis();
+  deltaTime = newTime - oldTime;
+
+  bool angryPressed = digitalRead(angryPin);
+  bool scaredPressed = digitalRead(scaredPin);
+
+  if (angryPressed || scaredPressed){
+    lcd.clear();
+    patternFinished = false;
+  }
+  if (angryPressed){
+    lcd.setCursor(16 - 6, 1);
+    lcd.print(" ANGRY");
+
+    digitalWrite(rPin, HIGH);
+    digitalWrite(gPin, LOW);
+    digitalWrite(bPin, LOW);
+  }
+  if (scaredPressed){
+    lcd.setCursor(16 - 6, 1);
+    lcd.print("SCARED");
+
+    digitalWrite(rPin, HIGH);
+    digitalWrite(gPin, HIGH);
+    digitalWrite(bPin, LOW);
+  }
+
+  if (patternFinished)  // Only run the code below if the pattern has not yet been recognized
+    return;
+
+  bool stepPassed = CheckPatternStep(currentPatternStep, pattern1);
+
+  if (stepPassed){
+    Serial.print("Step ");
+    Serial.print(currentPatternStep);
+    Serial.println(" passed!");
+    currentPatternStep++;   // Go to next step
+
+    patternTimer = patternStepDelay;
+    
+    digitalWrite(ledPin, HIGH);   // Turn on LED
+    ledTimer = ledLifetime;       // Start LED timer
+  }
+  
+  // Pattern timer
+  if (currentPatternStep > 0){
+    patternTimer -= deltaTime;
+
+    // Reset pattern recognition
+    if (patternTimer <= 0){
+      currentPatternStep = 0;
+      patternTimer = 0;
+
+      Serial.println("RESETTING PATTERN!");
+    }
+  }
+
+
+  // LED TIMER
+  if (ledTimer > 0){
+    ledTimer -= deltaTime;
+    
+    if (ledTimer <= 0){
+      ledTimer = 0;
+      digitalWrite(ledPin, LOW);  // Turn off LED
+    }
+  }
+  
+
+  /*
+  // READ SENSOR SIGNAL
+  int sensorSignal = analogRead(0);
+
+  // Visualise signal on LED
+  analogWrite(ledPin, sensorSignal / 4.0);
+  */
+}
+
+bool CheckPatternStep(int stepToCheck, int pattern[]){
+
+  int sensorValue = analogRead(sensorPin);
+  /* Debug values
+  Serial.print("Sensor Value: ");
+  Serial.print(sensorValue);
+  Serial.print(" | Step: ");
+  Serial.println(stepToCheck);
+  */
+
+  // Is the sensor value within the threshold?
+  if (sensorValue < pattern[stepToCheck] + patternDeviance && sensorValue > pattern[stepToCheck] - patternDeviance){
+    
+    int patternLength = sizeof(pattern1) / sizeof(pattern1[0]);
+    if (stepToCheck + 1 >= patternLength){
+      lcd.setCursor(0,0);
+      lcd.print("That was a");
+      lcd.setCursor(0,1);
+      lcd.print("sine wave!");
+      patternFinished = true;
+    }
+    
+    return true;
+  }
+  else{
+    return false;
+  }
+  
+}
